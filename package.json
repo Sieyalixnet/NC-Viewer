@@ -1,0 +1,28 @@
+{
+  "name": "NC_GUI",
+  "author": "SieyalixNet",
+  "license": "unknown",
+   "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "d": "tauri dev",
+    "b": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.0.2"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^1.0.1",
+    "@tauri-apps/cli": "^1.0.5",
+    "sass": "^1.54.5",
+    "svelte": "^3.49.0",
+    "svelte-preprocess": "^4.10.7",
+    "typescript": ">=4.1.2 <5.0.0",
+    "vite": "^3.0.2"
+  }
+}
