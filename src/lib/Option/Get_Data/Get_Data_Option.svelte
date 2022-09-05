@@ -13,7 +13,6 @@
     let attrs = variables.map((x) => x.attributes);
 </script>
 
-{selected_var}
 <SelectVar bind:variables bind:selected_var />
 <Slice bind:variables bind:selected_var bind:slice_helpers on:get_data />
 

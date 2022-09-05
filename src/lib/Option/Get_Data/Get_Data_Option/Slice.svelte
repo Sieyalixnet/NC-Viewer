@@ -21,9 +21,9 @@
         if (selected_element.type == "number") {
             for (let el of all_inputs) {
                 // @ts-ignore
-                el.style = "box-shadow:0 0 0px";
+                el.style = "box-shadow:0 0 10px rgba(0,0,0,0)";
             }
-            selected_element.style = "box-shadow:0 0 10px #f00";
+            selected_element.style = "box-shadow:0 0 10px rgba(255,150,150,0.8);transition:box-shadow 0.2s ease-in-out;";
         }
     }
     let confirm = () => {
@@ -43,11 +43,11 @@
 <button on:click={test}>test</button>
 <button on:click={get_data}>获取数据</button>
 {#if variable}
-    {#each variable.dimensions_len as dimension_len, index}
+    {#each variable.dimensions_len as _, index}
         <h3>{variable.dimensions_name[index]}</h3>
         <SliceSelect
             bind:last_select_input
-            bind:dimension_len
+            bind:dimension_len={variable.dimensions_len[index]}
             bind:dimension_name={variable.dimensions_name[index]}
             bind:dimension_slice={slice[index]}
             bind:slice_helper={slice_helpers[variable.dimensions_name[index]]}
@@ -61,6 +61,9 @@
                 bind:slice_helpers
                 bind:slice
             />
+        {:else}
+            <div style="height: 2.625rem;"></div>
+            <!--Keep the space-->
         {/if}
     {/each}
 {/if}

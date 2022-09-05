@@ -10,8 +10,8 @@
     // onMount(()=>console.log(attrs))
 </script>
 
-{#each variables as variable, i}
-    <h1>{i + 1}. {variable.name}</h1>
+{#each variables as variable, index}
+    <h1>{index + 1}. {variable.name}</h1>
     <AttributesTable attributes={variable.attributes} />
 {/each}
 

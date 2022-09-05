@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/tauri";
+import { message } from '@tauri-apps/api/dialog';
 import { map_object_to_array } from "../utils/utils.js";
 export function createFileManager(path) {//rows->height, cols->width
     const data = new FileManager(path);
@@ -150,7 +151,7 @@ export class FileManager {
 
         let time_index = Array(dimension_len).fill(0).map((x, i) => { return i })
 
-        locked_time_variable.slice_helper  = map_object_to_array({
+        locked_time_variable.slice_helper = map_object_to_array({
             "Time": start_delta_time_range["result_Str"],
             "Time (Date)": start_delta_time_range["result_Date"].map(x => x.toUTCString()),
             "Time (Predict)": actual_range_time_range.map(x => x.toUTCString()),
@@ -159,6 +160,7 @@ export class FileManager {
     }
 
 }
+
 
 function Calc_Distribution(actual_range, length) {
     let difference = (actual_range[1] - actual_range[0]) / (length - 1)
@@ -275,6 +277,7 @@ function fillzero(s, count) {
     }
     return s
 }
+
 
 
 // let a = new Time(1871, 7, 3, 8, 12, 10);

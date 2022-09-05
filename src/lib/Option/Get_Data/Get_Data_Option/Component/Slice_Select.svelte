@@ -3,16 +3,23 @@
     export let dimension_name = "";
     export let dimension_slice = [];
     export let slice_helper = [];
-    export let selected_element;
     //this two vars are for determine which input is selected
-    export let last_select_input;
-
-    let select_option; //id, is also equal to length
+    export let selected_element;//this one for Highlight the input el.
+    export let last_select_input;//this one for determine which one was selected lastly
+    let select_option; //id, is also equal to length, to determine how many inputs are shown.
     $: if (select_option && select_option != 0) {
+        clearLastSelect()
         dimension_slice = new Array(select_option).fill(0);
     } else {
+        clearLastSelect()
         dimension_slice = [];
     }
+    let clearLastSelect=()=>{
+        if(last_select_input.length==2 && last_select_input[0] ){
+            last_select_input=[]
+        }
+    }
+
     let handle_click = (value) => {
         last_select_input = [dimension_name, value];
         console.log(last_select_input);
@@ -38,16 +45,16 @@
         {/each}
     </select>
     <div class="Dimension">
-        {#each dimension_slice as slice_text, id}
+        {#each dimension_slice as _, index}
             <div on:click={handle_click_selectElement}>
-                <p style="display: inline-block;">{names[id]}:</p>
+                <p style="display: inline-block;">{names[index]}:</p>
                 <input
                     type="number"
                     class="slice_input"
                     on:click={() => {
-                        handle_click(id);
+                        handle_click(index);
                     }}
-                    bind:value={dimension_slice[id]}
+                    bind:value={dimension_slice[index]}
                 />
             </div>
         {/each}

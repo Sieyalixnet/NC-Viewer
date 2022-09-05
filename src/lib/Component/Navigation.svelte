@@ -6,7 +6,7 @@
         { k: "查看", v: "Render", selected: false },
         { k: "日志", v: "Log", selected: false },
     ];
-    function select(item) {
+    let select = (item)=>{
         selected = item.v;
         for (let i of map) {
             if (i.v != selected) {

@@ -6,7 +6,7 @@
   export let files = [];
   let path = "F:\\Programme\\0Project\\NC_GUI\\test.nc";
 
-  async function readfile() {
+  let readfile = async ()=> {
     let file = createFileManager(path);
     await file.init()
     if(file.index==9999 || file.index==10000){alert("This is not a valid NC file. ");return;}

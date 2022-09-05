@@ -15,11 +15,11 @@
                     <th>Name</th>
                     <th>length</th>
                 </tr>
-                {#each variable.dimensions_name as _, _i}
+                {#each variable.dimensions_name as _, ii}
                     <tr>
-                        <td>{_i}</td>
-                        <td>{variable.dimensions_name[_i]}</td>
-                        <td>{variable.dimensions_len[_i]}</td>
+                        <td>{ii}</td>
+                        <td>{variable.dimensions_name[ii]}</td>
+                        <td>{variable.dimensions_len[ii]}</td>
                     </tr>
                 {/each}
             </table>

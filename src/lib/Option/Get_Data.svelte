@@ -12,7 +12,7 @@
         { k: "维度", v: "Dimension", selected: false },
         { k: "获取", v: "Get", selected: false },
     ];
-    function select(item) {
+    let select=(item)=>{
         selected = item.v;
         for (let i of map) {
             if (i.v != selected) {
