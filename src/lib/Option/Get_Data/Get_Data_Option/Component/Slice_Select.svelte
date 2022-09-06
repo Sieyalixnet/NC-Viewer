@@ -1,11 +1,12 @@
 <script>
+    import { fade } from "svelte/transition";
     export let dimension_len = 0;
     export let dimension_name = "";
     export let dimension_slice = [];
     export let slice_helper = [];
-    //this two vars are for determine which input is selected
-    export let selected_element;//this one for Highlight the input el.
-    export let last_select_input;//this one for determine which one was selected lastly
+    //these two vars are for determine which input is selected
+    export let selected_element;//this one for highlighting the input el.
+    export let last_select_input;//this one for determine which one was selected lastly, it will be an array: ["dimension name", the index of selected input of this dimension]
     let select_option; //id, is also equal to length, to determine how many inputs are shown.
     $: if (select_option && select_option != 0) {
         clearLastSelect()
@@ -22,7 +23,6 @@
 
     let handle_click = (value) => {
         last_select_input = [dimension_name, value];
-        console.log(last_select_input);
     };
     let handle_click_selectElement = (event) => {
         selected_element = event.target;
@@ -36,7 +36,7 @@
     let names = ["Start", "End", "Step"];
 </script>
 
-<div class="Slice_Select">
+<div class="Slice_Select" in:fade>
     <select bind:value={select_option}>
         {#each options as option}
             <option value={option.id}>

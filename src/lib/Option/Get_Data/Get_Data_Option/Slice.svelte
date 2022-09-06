@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import { fade } from "svelte/transition";
     import Dimensions from "../Dimensions.svelte";
     import SliceSelect from "./Component/Slice_Select.svelte";
     import { createEventDispatcher } from "svelte";
@@ -11,7 +12,7 @@
     export let slice = [];
     export let slice_helpers = {};
     let selected_element = null;
-    let last_select_input = [];
+    let last_select_input = [];//["dimension name", the index of selected input of this dimension]
     let variable;
     // onMount(() => {
     //     console.log(variables, selected_var);
@@ -28,6 +29,7 @@
     }
     let confirm = () => {
         variable = variables.find((x) => x.name == selected_var);
+        slice = new Array(variable.dimension_len).fill([])
     };
     let test = () => {
         console.log(last_select_input);
@@ -38,10 +40,10 @@
 </script>
 
 <!-- {variable.dimensions_len} -->
-
-<button on:click={confirm}>确认</button>
+{slice}
+<button on:click={confirm}>查看该维度</button>
+{#if slice.length!=0}<button on:click={get_data}>获取数据</button>{/if}
 <button on:click={test}>test</button>
-<button on:click={get_data}>获取数据</button>
 {#if variable}
     {#each variable.dimensions_len as _, index}
         <h3>{variable.dimensions_name[index]}</h3>
@@ -53,7 +55,7 @@
             bind:slice_helper={slice_helpers[variable.dimensions_name[index]]}
             bind:selected_element
         />
-        {#if last_select_input.length == 2 && slice[index].length > 0}
+        {#if last_select_input.length == 2 }
             <SliceHelper
                 bind:last_select_input
                 bind:dimension_name={variable.dimensions_name[index]}
@@ -61,9 +63,6 @@
                 bind:slice_helpers
                 bind:slice
             />
-        {:else}
-            <div style="height: 2.625rem;"></div>
-            <!--Keep the space-->
         {/if}
     {/each}
 {/if}

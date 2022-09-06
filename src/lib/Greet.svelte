@@ -9,8 +9,10 @@
   import Log from "./Option/Log.svelte";
   import { fade, fly } from "svelte/transition";
   import { createFileManager } from "../core/FileManager.js";
+  import { createVector } from "../core/Geovector.js";
   import { slice_check } from "../utils/utils";
   export let files;
+  let Data=[];
   let selected = "File";
   let index = 0;
   let greetMsg = "";
@@ -27,7 +29,7 @@
     console.log(document.getElementById("box"));
   };
   let getvar = () => {
-    console.log(files[0].variables);
+    files[0].add_history("abcde").then(()=>{console.log("add")})
   };
   let greet = async () => {
     let a = await invoke("greet", {});
@@ -49,9 +51,11 @@
         return readTextFile("./temp");
       })
       .then((v) => {
-        console.log(JSON.parse(v));
+        let data = JSON.parse(v)
+        Data.push(createVector(data["data"],data["shape"]))
       })
       .then(() => {
+        console.log(Data)
         console.log(Date.now() - time);
       });
     //console.log(await files[0].get_values(name, slice));
@@ -90,9 +94,10 @@
 
         <button on:click={test}> get value </button>
         <button on:click={() => readhis()}> get his </button>
-        <button on:click={() => getvar()}> get var </button>
+         <button on:click={() => getvar()}> get var </button>
         <button on:click={get_value}> get value </button></div> -->
   {/if}
+
 </div>
 
 <style lang="scss">

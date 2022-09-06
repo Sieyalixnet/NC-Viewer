@@ -1,14 +1,16 @@
 <script>
-    import { onMount } from "svelte";
+    //import { onMount } from "svelte";
     export let files;
-    let log = "";
-    onMount(() => {
-        // console.log(files);
-        log = files[0].history;
-    });
+    // console.log(files);
+    let log = files[0].history;
+    let update = () => {
+        if (log != files[0].history) {
+            log = files[0].history;
+        }
+    };
 </script>
 
-<textarea value={log} cols="30" rows="10" />
+<textarea on:scroll={update} value={log} cols="30" rows="10" />
 
 <style lang="scss">
     textarea {

@@ -1,7 +1,10 @@
-use std::collections::HashMap;
+use crate::class::{
+    file_manage::{FileManager, ReturnArray},
+    variables::FileVariables,
+};
 use crate::Error;
-use crate::class::{variables::FileVariables, file_manage::{ReturnArray,FileManager}};
-
+use std::borrow::BorrowMut;
+use std::collections::HashMap;
 
 //PARTS: tauri State Control
 //#[derive(Serialize)]
@@ -27,36 +30,52 @@ impl State {
             _ => "None".to_string(),
         }
     }
-    pub fn get_attr(&self, index: usize) -> Option<HashMap<String,String>> {
+    pub fn add_his(&mut self, index: usize, text: &str) {
+        if (index + 1) <= self.files.len() {
+            let file = &mut self.files[index];
+            file.add_history(text);
+        }
+    }
+    pub fn get_attr(&self, index: usize) -> Option<HashMap<String, String>> {
         let file = self.files.get(index);
         match file {
             Some(f) => Some(f.attributes.clone()),
-            _ => None
+            _ => None,
         }
     }
     pub fn get_var(&self, index: usize) -> Option<Vec<FileVariables>> {
         let file = self.files.get(index);
         match file {
             Some(f) => Some(f.variables.clone()),
-            _ => None
+            _ => None,
         }
     }
-    pub fn get_value(&self,index: usize,name:&str,slice:Vec<Vec<usize>>)->Option<ReturnArray>{
+    pub fn get_value(
+        &self,
+        index: usize,
+        name: &str,
+        slice: Vec<Vec<usize>>,
+    ) -> Option<ReturnArray> {
         let file = self.files.get(index);
         match file {
             Some(f) => Some(f.get_variable_slice(name, slice)),
-            _ => None
-        }                   
+            _ => None,
+        }
     }
-    pub fn save_value(&self,index: usize,name:&str,slice:Vec<Vec<usize>>)->Result<ReturnArray,Error>{
+    pub fn save_value(
+        &self,
+        index: usize,
+        name: &str,
+        slice: Vec<Vec<usize>>,
+    ) -> Result<ReturnArray, Error> {
         let file = self.files.get(index);
         // match file {
         //     Some(f) => Some(f.get_variable_slice(name, slice)),
         //     _ => None
-        // }        
+        // }
         match file {
             Some(f) => Ok(f.get_variable_slice(name, slice)),
-            _ => panic!("!!")
-        }                
+            _ => panic!("!!"),
+        }
     }
 }

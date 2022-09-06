@@ -17,7 +17,7 @@ pub struct RustState(pub Mutex<State>);
 fn main() {
     tauri::Builder::default()
         .manage(RustState(Mutex::new(State { files: vec![] })))
-        .invoke_handler(tauri::generate_handler![greet, readfile, get_history,get_attributes,get_variables,get_values,save_values])
+        .invoke_handler(tauri::generate_handler![greet, readfile, get_history,get_attributes,get_variables,get_values,save_values,add_history])
         //
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds
@@ -45,6 +45,11 @@ fn readfile(path: &str, state: tauri::State<RustState>) -> usize {
 fn get_history(index: usize, state: tauri::State<RustState>) -> String {
     let state_guard = state.0.lock().unwrap();
     state_guard.get_his(index)
+}
+#[tauri::command]
+fn add_history(index: usize,text:String, state: tauri::State<RustState>){
+    let mut state_guard = state.0.lock().unwrap();
+    state_guard.add_his(index, &text);
 }
 #[tauri::command]
 fn get_attributes(index: usize, state: tauri::State<RustState>) -> HashMap<String,String>{
