@@ -1,3 +1,5 @@
+//array.js is used for array's operation.
+
 export function reshape(tensor, shape) {
     function _reshape(tensor, shapeValue) {
         let result = []

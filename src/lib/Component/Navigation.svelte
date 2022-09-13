@@ -1,10 +1,12 @@
 <script>
     export let selected;
-    let map = [
-        { k: "文件", v: "File", selected: true },
-        { k: "获取", v: "Get_Data", selected: false },
-        { k: "查看", v: "Render", selected: false },
-        { k: "日志", v: "Log", selected: false },
+    export let isExistData;
+    export let isExistFile;
+    $: map = [
+        { k: "文件", v: "File", selected: false,show:true },
+        { k: "获取", v: "Get_Data", selected: false,show:isExistFile },
+        { k: "查看", v: "Render", selected: false,show:isExistData },
+        { k: "日志", v: "Log", selected: false,show:isExistFile },
     ];
     let select = (item)=>{
         selected = item.v;
@@ -21,6 +23,7 @@
 
 <div class="nav">
     {#each map as item (item.v)}
+    {#if item.show}
         <div>
             <button
                 class:selected={item.selected}
@@ -28,7 +31,8 @@
                     select(item);
                 }}>{item.k}</button
             >
-        </div>
+        </div> 
+        {/if}
     {/each}
 </div>
 

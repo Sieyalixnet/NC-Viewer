@@ -1,4 +1,4 @@
-import {Calc_Distribution,parse_str_to_time,parse_str_to_time_since,fillzero} from "./parser_slice"
+import {Calc_Distribution,parse_str_to_time,parse_str_to_time_since,fillzero} from "./Time_Parser"
 
 export class Time {
     constructor(Y, M, D, h, m, s) {

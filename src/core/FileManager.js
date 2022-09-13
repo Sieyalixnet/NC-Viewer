@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from '@tauri-apps/api/dialog';
 import { Time } from "./Time.js";
-import { Calc_Distribution, parse_str_to_time, parse_str_to_time_since, fillzero } from "./parser_slice"
+import { Calc_Distribution, parse_str_to_time, parse_str_to_time_since, fillzero } from "./Time_Parser"
 import { map_object_to_array } from "../utils/utils.js";
 export function createFileManager(path) {//rows->height, cols->width
     const data = new FileManager(path);

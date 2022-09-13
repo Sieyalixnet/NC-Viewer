@@ -92,7 +92,7 @@ impl FileManager {
             his_out += &his_out_add;
         }
 
-        //create the Variables and add then in result.
+        //create the Variables and add them in result.
         if vars.len() == vars_name.len()
             && vars.len() == variables_dimension_name.len()
             && vars.len() == variables_dimension_len.len()

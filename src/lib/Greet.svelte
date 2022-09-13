@@ -3,24 +3,22 @@
   import { readTextFile, BaseDirectory } from "@tauri-apps/api/fs";
   import LoadFile from "./Component/LoadFile.svelte";
   import Navigation from "./Component/Navigation.svelte";
-  import GetData from "./Option/Get_Data.svelte";
   import Canvas from "./Component/Canvas.svelte";
-  import FileAttr from "./Option/File_Attr.svelte";
-  import Log from "./Option/Log.svelte";
+  import Option from "./Component/Option.svelte";
   import { fade, fly } from "svelte/transition";
   import { createFileManager } from "../core/FileManager.js";
   import { createVector } from "../core/Geovector.js";
-  import { slice_check } from "../utils/utils";
-  export let files;
-  let Data=[];
+  import { get_attr_pass_geovector, slice_check } from "../utils/utils";
+  export let files = [];
+  export let Data = [];
   let selected = "File";
   let index = 0;
   let greetMsg = "";
-  let Box_Height;
-  let Box_Width;
+
   // $: Box_Scroll_Width=Box_Width>=793?"overflow-x:scroll;":"overflow-x:hidden;";
-  $: Box_Scroll_Height =
-    Box_Height >= 200 ? "overflow-y:scroll;" : "overflow-y:hidden;";
+  $: isExistData = Data.length > 0;
+  $: isExistFile = files.length > 0;
+
   //  $:Box_Scroll=Box_Scroll_Width+Box_Scroll_Height;
   let readhis = () => {
     greetMsg = files[0].history;
@@ -29,7 +27,9 @@
     console.log(document.getElementById("box"));
   };
   let getvar = () => {
-    files[0].add_history("abcde").then(()=>{console.log("add")})
+    files[0].add_history("abcde").then(() => {
+      console.log("add");
+    });
   };
   let greet = async () => {
     let a = await invoke("greet", {});
@@ -38,6 +38,7 @@
   let get_data = (e) => {
     let slice = e.detail.slice;
     let name = e.detail.name;
+    let information_pass_geovector = e.detail.information_pass_geovector;
     if (!slice_check(slice)) {
       alert(
         "The ends of slice should be larger than the starts. And all the value of slice should be >= 0."
@@ -51,11 +52,19 @@
         return readTextFile("./temp");
       })
       .then((v) => {
-        let data = JSON.parse(v)
-        Data.push(createVector(data["data"],data["shape"]))
+        let data = JSON.parse(v);
+        let temp_data = createVector(data["data"], data["shape"]);
+        temp_data.set_attr(
+          "slice",
+          get_attr_pass_geovector(slice, information_pass_geovector)
+        );
+        console.log(temp_data);
+        console.log(temp_data["slice"]);
+        Data.push(temp_data);
+        Data = Data;
       })
       .then(() => {
-        console.log(Data)
+        console.log(Data);
         console.log(Date.now() - time);
       });
     //console.log(await files[0].get_values(name, slice));
@@ -63,32 +72,18 @@
 </script>
 
 <div id="MainContent">
-  {#if files.length == 0}
-    <LoadFile bind:files />
+  {isExistData}
+  {isExistFile}
+  {#if files.length == 0 && Data.length == 0}
+    <LoadFile bind:files bind:Data />
   {/if}
 
-  {#if files.length >= 1}
+  {#if files.length >= 1 || Data.length >= 1}
     <div in:fade>
-      <Canvas />
-      <Navigation bind:selected />
+      <Canvas bind:Data />
+      <Navigation bind:selected bind:isExistData bind:isExistFile />
+      <Option bind:Data bind:files on:get_data={get_data} bind:selected></Option>
       <!--such reactive height can not be same level-->
-      <div id="box" style={Box_Scroll_Height}>
-        <div bind:clientHeight={Box_Height}>
-          {#if selected == "Log"}
-            <div in:fade>
-              <Log bind:files />
-            </div>
-          {:else if selected == "Get_Data"}
-            <GetData bind:files on:get_data={get_data} />
-          {:else if selected == "File"}
-            <div in:fade>
-              <FileAttr bind:files />
-            </div>
-          {:else if selected == "Render"}
-            <p>Render</p>
-          {/if}
-        </div>
-      </div>
     </div>
     <!-- <div>        <input id="greet-input" placeholder="Enter a index..." />
 
@@ -97,7 +92,6 @@
          <button on:click={() => getvar()}> get var </button>
         <button on:click={get_value}> get value </button></div> -->
   {/if}
-
 </div>
 
 <style lang="scss">
@@ -107,12 +101,5 @@
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    #box {
-      background-color: rgba(60, 60, 60, 0.8);
-      border-radius: 5px;
-      padding: 5px;
-      max-height: 200px;
-      max-width: 793px;
-    }
   }
 </style>
