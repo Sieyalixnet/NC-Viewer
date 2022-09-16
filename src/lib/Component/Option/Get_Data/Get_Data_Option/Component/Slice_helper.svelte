@@ -36,7 +36,7 @@
     };
 </script>
 
-{#if dimension_name == last_select_input[0]}
+{#if (dimension_name == last_select_input[0]) && (slice_helpers[dimension_name].length>0)}
 <div in:fade>
     <select bind:value={selected_slice_helper}>
         {#each slice_helpers[dimension_name] as helper}

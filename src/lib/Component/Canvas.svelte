@@ -1,11 +1,35 @@
 <script>
     import WebGl3DController from "./Canvas/WebGL3D_Controller.svelte";
     import MouseMenu from "./Canvas/Component/MouseMenu.svelte";
+    import { writeBinaryFile,BaseDirectory } from '@tauri-apps/api/fs';
     import { tick } from "svelte";
     import { fade } from "svelte/transition";
     export let Data = [];
+    import { msg,message } from "../store";
+    let msgs;
+    const unsubscribe_msg = msg.subscribe((v) => {
+        msgs = v;
+    });
+    function put_message(type, text) {
+        msgs.push(message(type, text));
+        msg.set(msgs);
+    }
+    function remove_message(second) {
+        let s = 0;
+        if (second) {
+            s = second*1000;
+        }
+        setTimeout(() => {
+            if (msgs.length > 0) {
+                msgs.shift();
+            }
+            msg.set(msgs);
+        }, s);
+    }
+    // ----------------------------
     let left = 0; //right click event variable
     let top = 0; //right click event variable
+    let controller_show=false
     let menushow = false;
 
     let matrix;
@@ -19,6 +43,23 @@
                 ? 1
                 : -1;
     }
+    let switch_controller = ()=>{
+        controller_show = !controller_show
+
+    }
+    let download_image = async () =>{
+        drawScene()
+        let filename = "Geovector_"+(Date.now().toString()) +".png"
+        let canvas = document.getElementById("MainCanvas");
+        canvas.toBlob(async (blob)=>{
+            let u8a = await blob.arrayBuffer()
+            await writeBinaryFile(filename, u8a, { dir: BaseDirectory.Download });
+            put_message("message",`已保存至下载目录，文件名为${filename}`)
+            remove_message(2)
+        })
+
+    }
+
     let drawScene = () => {
         Data[0].render();
         Data[0].saveCam(matrix);
@@ -44,7 +85,6 @@
                 top = e.clientY;
             });
 
-            console.log(left);
         }
     };
     let handleMouseUp = (e) => {
@@ -83,23 +123,16 @@
         if (!matrix) {
             return;
         }
-        if (matrix.orthoUnits == 0) {
+
+        if (matrix.Ortho_Radians > 0) {
             if (e.deltaY > 0) {
-                matrix.fieldOfViewRadians += 1;
+                matrix.Ortho_Radians += 1;
             } else {
-                if (matrix.fieldOfViewRadians > 1) {
-                    matrix.fieldOfViewRadians -= 1;
+                if (matrix.Ortho_Radians > 1) {
+                    matrix.Ortho_Radians -= 1;
                 }
             }
-        } else {
-            if (e.deltaY > 0) {
-                matrix.orthoUnits += 1;
-            } else {
-                if (matrix.orthoUnits > 1) {
-                    matrix.orthoUnits -= 1;
-                }
-            }
-        }
+        } 
         matrix = matrix;
         drawScene();
     };
@@ -147,14 +180,20 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#if menushow}
-    <div in:fade={{ duration: 100 }} out:fade={{ duration: 100 }}>
-        <MouseMenu bind:left bind:top />
+    <div id="menu" in:fade={{ duration: 100 }} out:fade={{ duration: 100 }}>
+        <MouseMenu bind:left bind:top >
+            <button on:click={switch_controller}>{#if controller_show}隐藏{:else}显示{/if}控制栏</button>
+            <button on:click={download_image }>下载图像</button>
+            
+        </MouseMenu>
     </div>
 {/if}
 <div id="MainCanvasDiv">
-    <div id="webglController">
+    {#if controller_show}
+    <div id="webglController" in:fade={{ duration: 100 }} out:fade={{ duration: 100 }}>
         <WebGl3DController bind:Data bind:matrix />
     </div>
+    {/if}
     <canvas
         id="MainCanvas"
         height="400"
@@ -167,6 +206,13 @@
 </div>
 
 <style lang="scss">
+    #menu{
+        button{
+            width: 100% !important;
+            border-radius: 0;
+        }
+
+    }
     #MainCanvasDiv {
         position: relative;
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -176,7 +222,9 @@
             right: 0px;
             top: 0px;
             padding: 0 0 5px 5px;
-            box-shadow: 0px 0px 2px rgba(255, 255, 255, 0.4);
+            border-left: solid 1px rgba(255, 255, 255, 0.4);
+            border-bottom: solid 1px rgba(255, 255, 255, 0.4);
+            background-color: rgba(0,0,0, 0.4);
         }
     }
 </style>

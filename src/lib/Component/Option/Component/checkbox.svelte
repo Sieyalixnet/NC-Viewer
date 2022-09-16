@@ -1,4 +1,6 @@
 <script>
+    import { tick } from "svelte";
+
     export let label = "default label";
     export let checked = false;
     let p_click = () => {
@@ -15,9 +17,6 @@
     input,
     p {
         display: inline-block;
-    }
-    input[type="number"] {
-        width: 6.25rem;
     }
     input[type="checkbox"] {
         cursor: pointer;

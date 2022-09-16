@@ -15,13 +15,15 @@ console.log(top,left)
 <style lang="scss">
     #mousemenu{
         position:absolute;
-        z-index: 100;
-        background-color: black;
-        min-height: 200px;
+        z-index: 10;
+        background-color: rgba(0,0,0,0.9);
         min-width: 200px;
+        box-shadow: 0 0 3px rgba(255,255,255,0.8);
     }
 
 </style>
 
 
-<div id="mousemenu" ></div>
+<div id="mousemenu" >
+    <slot></slot>
+</div>

@@ -3,6 +3,8 @@ import { message } from '@tauri-apps/api/dialog';
 import { Time } from "./Time.js";
 import { Calc_Distribution, parse_str_to_time, parse_str_to_time_since, fillzero } from "./Time_Parser"
 import { map_object_to_array } from "../utils/utils.js";
+
+
 export function createFileManager(path) {//rows->height, cols->width
     const data = new FileManager(path);
     return new Proxy(data, FileManagerHandler(data));
@@ -38,12 +40,13 @@ export class FileManager {
         await this.get_variables();
         await this.get_attr();
         this.parse_variables_attrs()
-        try { this.parse_value_distribution("lat") } catch (e) { console.log(e) }
-        try { this.parse_value_distribution("lon") } catch (e) { console.log(e) }
+        let msg = ""
+        try { this.parse_value_distribution("lat") } catch (e) {msg+="Failed to parse latitude.\n"}
+        try { this.parse_value_distribution("lon") } catch (e) {msg+="Failed to parse longitude.\n"}
         try { this.parse_time() } catch (e) {
-            alert("This file is not a format NC file. Failed to parse time.")
-            console.log(e)
+           msg+="This file is not a format NC file. Failed to parse time.\n"
         }//TODO add Try catch    and default
+        return msg
     }
     async readfile() {
         this.index = await invoke("readfile", { path: this.path })
@@ -67,6 +70,10 @@ export class FileManager {
     async save_values(name, slice) {
         return await invoke("save_values", { index: this.index, name: name, slice: slice });
     }
+    async remove_file(){
+        await invoke("remove_file", { index: Number(this.index) });
+
+    }
 
     parse_variables_attrs() {
         for (let variable of this.variables) {
@@ -89,6 +96,7 @@ export class FileManager {
             }
         }
     }
+
     parse_value_distribution(s) {//s=lat/lon
         let variable = this.variables.find(x => x.name.toLowerCase().includes(s))
         let length = variable["dimensions_len"][0]
@@ -108,7 +116,6 @@ export class FileManager {
 
         locked_time_variable = this.variables.find(x => x.name.toLowerCase().includes("time"))
         if (locked_time_variable) {
-            console.log(1)
             time_base = locked_time_variable.attributes["units"]
             dimension_len = locked_time_variable["dimensions_len"][0]
             actual_range = locked_time_variable.attributes["actual_range"]

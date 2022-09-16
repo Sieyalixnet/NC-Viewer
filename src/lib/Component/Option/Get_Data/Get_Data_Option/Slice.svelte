@@ -44,10 +44,8 @@
 </script>
 
 <!-- {variable.dimensions_len} -->
-{slice}
 <button on:click={confirm}>查看该维度</button>
 {#if slice.length!=0}<button on:click={get_data}>获取数据</button>{/if}
-<button on:click={test}>test</button>
 {#if variable}
     {#each variable.dimensions_len as _, index}
         <h3>{variable.dimensions_name[index]}</h3>

@@ -22,7 +22,7 @@
             <GetData bind:files on:get_data />
         {:else if selected == "File"}
             <div in:fade>
-                <FileAttr bind:files />
+                <FileAttr bind:files  bind:Data/>
             </div>
         {:else if selected == "Render"}
             <ShowData bind:Data />

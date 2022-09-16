@@ -26,7 +26,7 @@
     {#if item.show}
         <div>
             <button
-                class:selected={item.selected}
+                class:selected={selected===item.v}
                 on:click={() => {
                     select(item);
                 }}>{item.k}</button

@@ -36,6 +36,9 @@ impl State {
             file.add_history(text);
         }
     }
+    pub fn remove_file(&mut self, index: usize) {
+        self.files.remove(index);
+    }
     pub fn get_attr(&self, index: usize) -> Option<HashMap<String, String>> {
         let file = self.files.get(index);
         match file {

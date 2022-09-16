@@ -11,7 +11,7 @@ export function radToDeg(r) {
 export function degToRad(d) {
     return d * Math.PI / 180;
 }
-export function set_Matrix2(perspective, translation, rotation, scale) {//it is decreapted
+export function set_Matrix2(perspective, translation, rotation, scale) {//decreapted
     const { fieldOfViewRadians, aspect, zNear, zFar } = perspective;
     let matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
     matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);
@@ -23,20 +23,20 @@ export function set_Matrix2(perspective, translation, rotation, scale) {//it is 
 }
 
 export function get_Matrix(gl, export_matrix, shape) {//return a matrix of matrices calculation.
-    let { translation, rotation, scale, camPos, orthoUnits, fieldOfViewRadians } = export_matrix
+    let { translation, rotation, scale, camPos, Ortho_Radians,ortho} = export_matrix
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const near = 1;
     const far = 2000;
 
-    const perspectiveProjectionMatrix = orthoUnits != 0 ?//if the orthoUnit is zero, it will will use 3D perspective projection, or it will use 3D orthographic projection.
+    const perspectiveProjectionMatrix = ortho ?//if the orthoUnit is zero, it will will use 3D perspective projection, or it will use 3D orthographic projection.
         m4.orthographic(
-            -orthoUnits * aspect,  // left
-            orthoUnits * aspect,  // right
-            -orthoUnits,           // bottom
-            orthoUnits,           // top
+            -Ortho_Radians * aspect,  // left
+            Ortho_Radians * aspect,  // right
+            -Ortho_Radians,           // bottom
+            Ortho_Radians,           // top
             near,
             far) :
-        m4.perspective(degToRad(fieldOfViewRadians), aspect, near, far);
+        m4.perspective(degToRad(Ortho_Radians), aspect, near, far);
 
     const cameraPosition = [
         camPos[0],
@@ -195,7 +195,7 @@ export function get_DEM_Buffer_from_Arrays(gl, Data, attr) {
         for (let i of Z) {
             let v = ((i - min_Z) / (max_Z - min_Z))
             let c = convert_colorString_to_obj(color(v))
-            _texcoord_.push(...[c["r"], c["g"], c["b"]])
+            _texcoord_.push(...[c["r"], c["g"], c["b"],255])
         }
         console.log("end color interpret",(Date.now()-time1))
     } else {
@@ -207,10 +207,10 @@ export function get_DEM_Buffer_from_Arrays(gl, Data, attr) {
             if (i >= min && i <= max) {
                 let v = ((i - min) / (max - min))
                 let c = convert_colorString_to_obj(color(v))
-                _texcoord_.push(...[c["r"], c["g"], c["b"]])
+                _texcoord_.push(...[c["r"], c["g"], c["b"],255])
             }
             else {
-                _texcoord_.push(...[0, 0, 0])
+                _texcoord_.push(...[0, 0, 0,0])
             }
         }
 
@@ -240,5 +240,22 @@ export function get_grid_Buffer_from_Array_Object(gl, grid, color = [0, 0, 0, 17
     let color_result = new Array(position_result.length).fill(color)
     let position = new Float32Array(position_result.flat());
     let texcoord = new Uint8Array(color_result.flat())
+    return { position, texcoord }
+}
+
+export function get_surface_Buffer_from_Array_Object(gl, shape,surface, color = [0, 0, 0, 176]) {
+    //an object {x,y,z} -> position and color Buffer.
+    let position_result = [];
+    const {z,color_final} = surface
+    if(color_final){color=color_final}
+    let x_N = shape[shape.length-1]
+    let y_N = shape[shape.length-2]
+    for (let _Z of z) {
+        position_result.push([0,0,_Z],[0,y_N,_Z],[x_N,y_N,_Z],[0,0,_Z],[x_N,0,_Z],[x_N,y_N,_Z])
+    }
+    let color_result = new Array(position_result.length).fill(color)
+    let position = new Float32Array(position_result.flat());
+    let texcoord = new Uint8Array(color_result.flat())
+    console.log(texcoord)
     return { position, texcoord }
 }

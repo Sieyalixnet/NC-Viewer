@@ -1,9 +1,9 @@
 import { isObject, new_ } from "../utils/utils";
 import { downloadJSON } from "../utils/text";
 import { createCanvas } from "../utils/canvas";
-import { reflect_to, reshape } from "../utils/array";
-import { radToDeg, degToRad, get_Matrix, set_Buffers, get_DEM_Buffer_from_Arrays, drawArr, get_grid_Buffer_from_Array_Object } from "./WebGL/render_3d_utils"
-import { vertex_shader, fragment_shader, grid_vertex_shader, grid_fragment_shader } from "./WebGL/shaders/shader_3d_main_canvas";
+import { max_f64,min_f64, reflect_to, reshape } from "../utils/array";
+import { radToDeg, degToRad, get_Matrix, set_Buffers, get_DEM_Buffer_from_Arrays, drawArr, get_grid_Buffer_from_Array_Object, get_surface_Buffer_from_Array_Object } from "./WebGL/render_3d_utils"
+import { vertex_shader, fragment_shader, grid_vertex_shader, grid_fragment_shader,value_surface_fragment_shader,value_surface_vertex_shader } from "./WebGL/shaders/shader_3d_main_canvas";
 import { webglUtils } from "../WebGLFundamentals/webgl-utils";
 import { m4 } from "../WebGLFundamentals/m4"
 export function createVector(data, shape, attr) {//rows->height, cols->width
@@ -43,6 +43,8 @@ export class Geovector {
     set_attr(key, value) {
         this.OptionalAttributes[key] = value
     }
+    max_value(index){return max_f64(this.data[index].flat())}
+    min_value(index){return min_f64(this.data[index].flat())}
     initRender() {
         let scale_param;
         let max_length = Math.max(this.shape[1], this.shape[2]);
@@ -55,21 +57,25 @@ export class Geovector {
             rotation: [290, 0, 180],
             scale: [1, 1, 1].map(x => x * scale_param),
             camPos: [0, 0, 200],
-            fieldOfViewRadians: 50,
-            orthoUnits: 100
+            Ortho_Radians: 50,//Ortho unit or field of Radians
+            ortho:true
         }
 
         this.bufferIndex=0;
 
-        this.OptionalAttributes.grid = {
-            //x,y,z should be accorded with index of Data.
-            //IT IS NOT real coordinate of the points.
-            x: [0, 60, 120, 180, 240, 300, 360].map(x => x / 2.5),//width, lon, from 0
-            y: [0, 60, 120, 180].map(x => x / 2.5),//all of them should be sorted//height, lat, from 0
+        // this.OptionalAttributes.grid = {
+        //     //x,y,z should be accorded with index of Data.
+        //     //IT IS NOT real coordinate of the points.
+        //     x: [0, 60, 120, 180, 240, 300, 360].map(x => x / 2.5),//width, lon, from 0
+        //     y: [0, 60, 120, 180].map(x => x / 2.5),//all of them should be sorted//height, lat, from 0
 
-            z: [0]
+        //     z: [0]
 
-        }
+        // }
+        // this.OptionalAttributes.surface = {
+        //     z: [10,20,30]
+
+        // }
     }
     useBuffer(num){
         let result = []
@@ -90,21 +96,46 @@ export class Geovector {
             for (let fn of this.renderWebGL.drawScene) { fn() };
         }
     }
-
+    renderSurface() {
+        let canvas = document.querySelector("#MainCanvas");
+        let gl = canvas.getContext("webgl");
+        if (!gl) {
+            return;
+        }
+        let bufferIndeces = this.useBuffer(2)
+        let program = webglUtils.createProgramFromScripts(gl, [value_surface_fragment_shader,value_surface_vertex_shader], ["a_position", "a_color"], bufferIndeces);
+        gl.useProgram(program);
+        let grid_matrixLocation = gl.getUniformLocation(program, "u_matrix");
+        let buffers = get_surface_Buffer_from_Array_Object(gl,this.shape,this.OptionalAttributes.surface)
+        set_Buffers(gl, program, bufferIndeces[0], buffers.position, 3, { BufferType: gl.FLOAT })
+        set_Buffers(gl, program, bufferIndeces[1], buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        let shape = this.shape
+        let export_matrix = this.renderWebGL.matrix
+        this.renderWebGL.drawScene.push(drawScene)
+        drawScene();
+        function drawScene() {
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA)
+            // gl.blendFunc(gl.ONE_MINUS_SRC_COLOR, gl.DST_ALPHA)
+            // gl.enable(gl.DEPTH_TEST);
+            let mat = get_Matrix(gl, export_matrix, shape)
+            gl.useProgram(program);
+            gl.uniformMatrix4fv(grid_matrixLocation, false, mat);
+            drawArr(gl, undefined, undefined, buffers.position.length / 2)
+        }
+    }
     renderGrid() {
         let canvas = document.querySelector("#MainCanvas");
         let gl = canvas.getContext("webgl");
         if (!gl) {
             return;
         }
-
         let bufferIndeces = this.useBuffer(2)
         let grid_program = webglUtils.createProgramFromScripts(gl, [grid_vertex_shader, grid_fragment_shader], ["a_position", "a_color"], bufferIndeces);
         gl.useProgram(grid_program);
         let grid_matrixLocation = gl.getUniformLocation(grid_program, "u_matrix");
         let grid_buffers = get_grid_Buffer_from_Array_Object(gl, this.OptionalAttributes.grid)
-
-
         set_Buffers(gl, grid_program, bufferIndeces[0], grid_buffers.position, 3, { BufferType: gl.FLOAT })
         set_Buffers(gl, grid_program, bufferIndeces[1], grid_buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         let shape = this.shape
@@ -112,7 +143,6 @@ export class Geovector {
         this.renderWebGL.drawScene.push(drawScene)
         drawScene();
         function drawScene() {
-
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.disable(gl.DEPTH_TEST);
             // gl.enable(gl.DEPTH_TEST);
@@ -140,7 +170,7 @@ export class Geovector {
 
         gl.useProgram(main_program);
         set_Buffers(gl, main_program, bufferIndeces[0], main_buffers.position, 3, { BufferType: gl.FLOAT })
-        set_Buffers(gl, main_program, bufferIndeces[1], main_buffers.texcoord, 3, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        set_Buffers(gl, main_program, bufferIndeces[1], main_buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         console.log("set buffer",(Date.now()-time1))
         gl.useProgram(main_program);
         let main_matrixLocation = gl.getUniformLocation(main_program, "u_matrix");
@@ -187,9 +217,11 @@ export class Geovector {
     }
     async json_to_download(filename) {//download this layer only
         if(!filename){
-            filename= "Geovector_"+(Date.now().toString())
+            filename= "Geovector_"+(Date.now().toString())+".JSON"
         }
-        
+        if(!filename.endsWith(".JSON")){
+            filename+=".JSON"
+        }
         let Imagefile = {
             files: [{
                 filename: filename,
@@ -201,11 +233,11 @@ export class Geovector {
             }]
 
         }
-        console.log(Imagefile)
         let json = JSON.stringify(Imagefile);
         // console.log(json)
         // console.log(JSON.parse(json))
-        await downloadJSON(json)
+        await downloadJSON(json,filename)
+        return filename
     }
 }
 function __render__(Vector, reflect) {

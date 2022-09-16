@@ -9,32 +9,37 @@
   import { createFileManager } from "../core/FileManager.js";
   import { createVector } from "../core/Geovector.js";
   import { get_attr_pass_geovector, slice_check } from "../utils/utils";
+  //PARTS: init Store to show message
+  import { msg,message } from "./store";
+  let msgs;
+  const unsubscribe_msg = msg.subscribe((v) => {
+      msgs = v;
+  });
+  function put_message(type, text) {
+      msgs.push(message(type, text));
+      msg.set(msgs);
+  }
+  function remove_message(second) {
+      let s = 0;
+      if (second) {
+          s = second*1000;
+      }
+      setTimeout(() => {
+          if (msgs.length > 0) {
+              msgs.shift();
+          }
+          msg.set(msgs);
+      }, s);
+  }
+  //----------------------------
+
   export let files = [];
   export let Data = [];
   let selected = "File";
-  let index = 0;
-  let greetMsg = "";
 
-  // $: Box_Scroll_Width=Box_Width>=793?"overflow-x:scroll;":"overflow-x:hidden;";
   $: isExistData = Data.length > 0;
   $: isExistFile = files.length > 0;
 
-  //  $:Box_Scroll=Box_Scroll_Width+Box_Scroll_Height;
-  let readhis = () => {
-    greetMsg = files[0].history;
-  };
-  let test = () => {
-    console.log(document.getElementById("box"));
-  };
-  let getvar = () => {
-    files[0].add_history("abcde").then(() => {
-      console.log("add");
-    });
-  };
-  let greet = async () => {
-    let a = await invoke("greet", {});
-    console.log(a["aa"]);
-  };
   let get_data = (e) => {
     let slice = e.detail.slice;
     let name = e.detail.name;
@@ -45,6 +50,7 @@
       );
       return;
     }
+    put_message("message","正在读取文件，请等待。如果等待时间过长，请检查是否以管理员权限运行本软件(右键-以管理员身份运行)，并且切勿一次读取过多数据(在 获取 中限定维度)。")
     let time = Date.now();
     files[0]
       .save_values(name, slice)
@@ -58,22 +64,20 @@
           "slice",
           get_attr_pass_geovector(slice, information_pass_geovector)
         );
-        console.log(temp_data);
-        console.log(temp_data["slice"]);
+        // console.log(temp_data);
+        Data = []
         Data.push(temp_data);
         Data = Data;
+        remove_message()
       })
-      .then(() => {
-        console.log(Data);
-        console.log(Date.now() - time);
-      });
-    //console.log(await files[0].get_values(name, slice));
+      // .then(() => {
+      //   console.log(Data);
+      //   console.log(Date.now() - time);
+      // });
   };
 </script>
 
 <div id="MainContent">
-  {isExistData}
-  {isExistFile}
   {#if files.length == 0 && Data.length == 0}
     <LoadFile bind:files bind:Data />
   {/if}
@@ -83,14 +87,7 @@
       <Canvas bind:Data />
       <Navigation bind:selected bind:isExistData bind:isExistFile />
       <Option bind:Data bind:files on:get_data={get_data} bind:selected></Option>
-      <!--such reactive height can not be same level-->
     </div>
-    <!-- <div>        <input id="greet-input" placeholder="Enter a index..." />
-
-        <button on:click={test}> get value </button>
-        <button on:click={() => readhis()}> get his </button>
-         <button on:click={() => getvar()}> get var </button>
-        <button on:click={get_value}> get value </button></div> -->
   {/if}
 </div>
 
