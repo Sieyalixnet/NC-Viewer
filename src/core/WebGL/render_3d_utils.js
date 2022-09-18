@@ -11,7 +11,7 @@ export function radToDeg(r) {
 export function degToRad(d) {
     return d * Math.PI / 180;
 }
-export function set_Matrix2(perspective, translation, rotation, scale) {//decreapted
+export function set_Matrix2(perspective, translation, rotation, scale) {//Deprecated
     const { fieldOfViewRadians, aspect, zNear, zFar } = perspective;
     let matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
     matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);

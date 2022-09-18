@@ -4,6 +4,7 @@
     import ChannelSelect from "./Show_Data/Channel_Select.svelte";
     import GridDEM from "./Show_Data/Grid_DEM.svelte";
     import IsofaceDem from "./Show_Data/Isoface_DEM.svelte";
+    import Reshape from "./Show_Data/Reshape.svelte";
     export let Data = [];
     let color_array = ["#000000", "#ffffff"]; //for color interpretation
     let value_array = [0, 1]; //for color interpretation
@@ -96,9 +97,15 @@
         <button on:click={show_3D}>渲染</button>
         <button on:click={downloadJSON}>下载JSON</button>
     </div>
+    <div class="show_data_option">
+        <Reshape bind:Data></Reshape>
+    </div>
 </div>
 {:else}
-<div><p>这不是一个有效的数据(数据应在3个维度或以上)。</p></div>
+<div><p>这不是一个有效的数据(数据应在3个维度或以上)。请通过以下组件改变形状。</p></div>
+<div>
+<Reshape bind:Data></Reshape>
+</div>
 {/if}
 
 <style lang="scss">

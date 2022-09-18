@@ -11,7 +11,7 @@
     } else {surface_exist= false}
 
 
-    let value = [0, 30]; //start, end, delta
+    let value = [10, 30]; //start, end, delta
     let value_delta = 10;
     let color = "#ffffff";
     let alpha = 0.1;

@@ -4,7 +4,7 @@
     export let selected_range;
     let max=0;
     let min=0
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, tick } from "svelte";
     const dispatch = createEventDispatcher();
     let auto_render_event = () => {
         if (auto_render) {
@@ -19,7 +19,7 @@
         range_3dimension = Data[0].shape[0] - 1;
         range_3dimension_boolen = isNumber(range_3dimension);
     }
-    $: if(isNumber(selected_range)){
+    $: if(Data[0] && Data[0].shape.length == 3 && isNumber(selected_range)){
         max = Math.round(Data[0].max_value(selected_range)*1000)/1000
         min = Math.round(Data[0].min_value(selected_range)*1000)/1000
     }

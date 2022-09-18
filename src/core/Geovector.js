@@ -1,9 +1,9 @@
 import { isObject, new_ } from "../utils/utils";
 import { downloadJSON } from "../utils/text";
 import { createCanvas } from "../utils/canvas";
-import { max_f64,min_f64, reflect_to, reshape } from "../utils/array";
+import { max_f64, min_f64, reflect_to, reshape } from "../utils/array";
 import { radToDeg, degToRad, get_Matrix, set_Buffers, get_DEM_Buffer_from_Arrays, drawArr, get_grid_Buffer_from_Array_Object, get_surface_Buffer_from_Array_Object } from "./WebGL/render_3d_utils"
-import { vertex_shader, fragment_shader, grid_vertex_shader, grid_fragment_shader,value_surface_fragment_shader,value_surface_vertex_shader } from "./WebGL/shaders/shader_3d_main_canvas";
+import { vertex_shader, fragment_shader, grid_vertex_shader, grid_fragment_shader, value_surface_fragment_shader, value_surface_vertex_shader } from "./WebGL/shaders/shader_3d_main_canvas";
 import { webglUtils } from "../WebGLFundamentals/webgl-utils";
 import { m4 } from "../WebGLFundamentals/m4"
 export function createVector(data, shape, attr) {//rows->height, cols->width
@@ -34,8 +34,10 @@ export class Geovector {
         } else {
             this.OptionalAttributes = {}
         }
-        this.reshape()
-        this.initRender()
+        try {
+            this.reshape()
+            this.initRender()
+        } catch (e) { console.log(e) }
     }
     reshape(shape = this.shape) {
         this.data = reshape(this.data, shape)
@@ -43,8 +45,23 @@ export class Geovector {
     set_attr(key, value) {
         this.OptionalAttributes[key] = value
     }
-    max_value(index){return max_f64(this.data[index].flat())}
-    min_value(index){return min_f64(this.data[index].flat())}
+    reshape_to(dimension) {
+        let result = null;
+        try {
+            result = reshape(this.data, dimension, "object")
+        } catch (e) {
+            return { e }
+        }
+        if (result) {//pay attention that these code will make a closure if we do not use a deep copy for the object "result".
+            this.data = new_(result["tensor"])
+            let shape = result["shape"]
+            this.shape = new_(shape)
+            return { shape: this.shape }
+
+        }
+    }
+    max_value(index) { return max_f64(this.data[index].flat()) }
+    min_value(index) { return min_f64(this.data[index].flat()) }
     initRender() {
         let scale_param;
         let max_length = Math.max(this.shape[1], this.shape[2]);
@@ -58,10 +75,10 @@ export class Geovector {
             scale: [1, 1, 1].map(x => x * scale_param),
             camPos: [0, 0, 200],
             Ortho_Radians: 50,//Ortho unit or field of Radians
-            ortho:true
+            ortho: true
         }
 
-        this.bufferIndex=0;
+        this.bufferIndex = 0;
 
         // this.OptionalAttributes.grid = {
         //     //x,y,z should be accorded with index of Data.
@@ -77,17 +94,17 @@ export class Geovector {
 
         // }
     }
-    useBuffer(num){
+    useBuffer(num) {
         let result = []
         let Index = this.bufferIndex
-        for(let i = Index;i<Index+num;i++){
+        for (let i = Index; i < Index + num; i++) {
             result.push(i)
         }
-        this.bufferIndex+=num
+        this.bufferIndex += num
         return result
 
     }
-    clearBufferIndex(){this.bufferIndex=0}
+    clearBufferIndex() { this.bufferIndex = 0 }
     saveCam(cam) {
         this.OptionalAttributes.saved_cam = new_(cam)
     }
@@ -103,10 +120,10 @@ export class Geovector {
             return;
         }
         let bufferIndeces = this.useBuffer(2)
-        let program = webglUtils.createProgramFromScripts(gl, [value_surface_fragment_shader,value_surface_vertex_shader], ["a_position", "a_color"], bufferIndeces);
+        let program = webglUtils.createProgramFromScripts(gl, [value_surface_fragment_shader, value_surface_vertex_shader], ["a_position", "a_color"], bufferIndeces);
         gl.useProgram(program);
         let grid_matrixLocation = gl.getUniformLocation(program, "u_matrix");
-        let buffers = get_surface_Buffer_from_Array_Object(gl,this.shape,this.OptionalAttributes.surface)
+        let buffers = get_surface_Buffer_from_Array_Object(gl, this.shape, this.OptionalAttributes.surface)
         set_Buffers(gl, program, bufferIndeces[0], buffers.position, 3, { BufferType: gl.FLOAT })
         set_Buffers(gl, program, bufferIndeces[1], buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         let shape = this.shape
@@ -116,7 +133,7 @@ export class Geovector {
         function drawScene() {
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
             // gl.blendFunc(gl.ONE_MINUS_SRC_COLOR, gl.DST_ALPHA)
             // gl.enable(gl.DEPTH_TEST);
             let mat = get_Matrix(gl, export_matrix, shape)
@@ -161,17 +178,17 @@ export class Geovector {
             return;
         }
         // setup GLSL program
-        let time1=Date.now()
+        let time1 = Date.now()
         let bufferIndeces = this.useBuffer(2)
         console.log(bufferIndeces)
         let main_program = webglUtils.createProgramFromScripts(gl, [vertex_shader, fragment_shader], ["a_position", "a_color"], bufferIndeces)
         let main_buffers = get_DEM_Buffer_from_Arrays(gl, this.data[index], attr)
-        console.log("get array",(Date.now()-time1))
+        console.log("get array", (Date.now() - time1))
 
         gl.useProgram(main_program);
         set_Buffers(gl, main_program, bufferIndeces[0], main_buffers.position, 3, { BufferType: gl.FLOAT })
         set_Buffers(gl, main_program, bufferIndeces[1], main_buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
-        console.log("set buffer",(Date.now()-time1))
+        console.log("set buffer", (Date.now() - time1))
         gl.useProgram(main_program);
         let main_matrixLocation = gl.getUniformLocation(main_program, "u_matrix");
 
@@ -202,33 +219,33 @@ export class Geovector {
         let canvas = createCanvas(Uint8ClampedArray.from(data), this.cols, this.rows)
         downloadImage(canvas)
     }
-    createLayerJSON(){
-        if(this.shape.length!=3){return;}
+    createLayerJSON() {
+        if (this.shape.length != 3) { return; }
         let layers = []
         let cols = this.shape[2]
         let rows = this.shape[1]
-        for(let index=0;index<this.shape[0];index++){
+        for (let index = 0; index < this.shape[0]; index++) {
             let data = (this.data[index]).flat()
             let name = this.OptionalAttributes.slice[0]["value"][index]
-            let layer = {name,data,cols,rows}
+            let layer = { name, data, cols, rows }
             layers.push(layer)
         }
         return layers
     }
     async json_to_download(filename) {//download this layer only
-        if(!filename){
-            filename= "Geovector_"+(Date.now().toString())+".JSON"
+        if (!filename) {
+            filename = "Geovector_" + (Date.now().toString()) + ".JSON"
         }
-        if(!filename.endsWith(".JSON")){
-            filename+=".JSON"
+        if (!filename.endsWith(".JSON")) {
+            filename += ".JSON"
         }
         let Imagefile = {
             files: [{
                 filename: filename,
-                layers: 
+                layers:
                     this.createLayerJSON()
                 ,
-                OptionalAttributes:this.OptionalAttributes
+                OptionalAttributes: this.OptionalAttributes
 
             }]
 
@@ -236,7 +253,7 @@ export class Geovector {
         let json = JSON.stringify(Imagefile);
         // console.log(json)
         // console.log(JSON.parse(json))
-        await downloadJSON(json,filename)
+        await downloadJSON(json, filename)
         return filename
     }
 }

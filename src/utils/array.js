@@ -1,6 +1,7 @@
 //array.js is used for array's operation.
 
-export function reshape(tensor, shape) {
+export function reshape(tensor, shape, returnType = undefined) {
+    tensor = tensor.flat(Infinity)
     function _reshape(tensor, shapeValue) {
         let result = []
         const piecesNum = shapeValue
@@ -25,7 +26,11 @@ export function reshape(tensor, shape) {
 
         }
     } else { throw (`${tensor.length} can not be divided by ${shape.join(" * ")}.`) }
-    return (tensor[0])
+    if (!returnType) {
+        return (tensor[0])
+    } else if (returnType == "object") {
+        return {"tensor":tensor[0],"shape":shape}
+    }
 }
 
 export function reflect_to(data, min_reflect, max_reflect) {
@@ -36,11 +41,11 @@ export function reflect_to(data, min_reflect, max_reflect) {
     return result;
 }
 
-export function max_f64(data){
+export function max_f64(data) {
     return data.reduce((a, b) => Math.max(a, b), -Infinity)
 }
 
-export function min_f64(data){
+export function min_f64(data) {
     return data.reduce((a, b) => Math.min(a, b), Infinity)
 
 }
