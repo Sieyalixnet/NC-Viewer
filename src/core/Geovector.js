@@ -2,7 +2,8 @@ import { isObject, new_ } from "../utils/utils";
 import { downloadJSON } from "../utils/text";
 import { createCanvas } from "../utils/canvas";
 import { max_f64, min_f64, reflect_to, reshape } from "../utils/array";
-import { radToDeg, degToRad, get_Matrix, set_Buffers, get_DEM_Buffer_from_Arrays, drawArr, get_grid_Buffer_from_Array_Object, get_surface_Buffer_from_Array_Object } from "./WebGL/render_3d_utils"
+import { radToDeg, degToRad, get_Matrix, set_Buffers, get_DEM_Buffer_from_Arrays, drawArr,drawElements, get_grid_Buffer_from_Array_Object, get_surface_Buffer_from_Array_Object,get_DEM_position_Buffer_from_Arrays,set_Element_Array_Buffers,get_LINES_DEM_position_Buffer_from_Arrays,get_LINES_DEM_Buffer_from_Arrays } from "./WebGL/render_3d_utils"
+
 import { vertex_shader, fragment_shader, grid_vertex_shader, grid_fragment_shader, value_surface_fragment_shader, value_surface_vertex_shader } from "./WebGL/shaders/shader_3d_main_canvas";
 import { webglUtils } from "../WebGLFundamentals/webgl-utils";
 import { m4 } from "../WebGLFundamentals/m4"
@@ -108,6 +109,9 @@ export class Geovector {
     saveCam(cam) {
         this.OptionalAttributes.saved_cam = new_(cam)
     }
+    clearWebGL(){
+        this.renderWebGL={}
+    }
     render() {
         if (Array.isArray(this.renderWebGL.drawScene)) {
             for (let fn of this.renderWebGL.drawScene) { fn() };
@@ -124,8 +128,8 @@ export class Geovector {
         gl.useProgram(program);
         let grid_matrixLocation = gl.getUniformLocation(program, "u_matrix");
         let buffers = get_surface_Buffer_from_Array_Object(gl, this.shape, this.OptionalAttributes.surface)
-        set_Buffers(gl, program, bufferIndeces[0], buffers.position, 3, { BufferType: gl.FLOAT })
-        set_Buffers(gl, program, bufferIndeces[1], buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        set_Buffers(gl, program, bufferIndeces[0], {bufferDataValue:buffers.position}, 3, { BufferType: gl.FLOAT })
+        set_Buffers(gl, program, bufferIndeces[1], {bufferDataValue:buffers.texcoord}, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         let shape = this.shape
         let export_matrix = this.renderWebGL.matrix
         this.renderWebGL.drawScene.push(drawScene)
@@ -153,8 +157,8 @@ export class Geovector {
         gl.useProgram(grid_program);
         let grid_matrixLocation = gl.getUniformLocation(grid_program, "u_matrix");
         let grid_buffers = get_grid_Buffer_from_Array_Object(gl, this.OptionalAttributes.grid)
-        set_Buffers(gl, grid_program, bufferIndeces[0], grid_buffers.position, 3, { BufferType: gl.FLOAT })
-        set_Buffers(gl, grid_program, bufferIndeces[1], grid_buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        set_Buffers(gl, grid_program, bufferIndeces[0], {bufferDataValue:grid_buffers.position}, 3, { BufferType: gl.FLOAT })
+        set_Buffers(gl, grid_program, bufferIndeces[1], {bufferDataValue:grid_buffers.texcoord}, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         let shape = this.shape
         let export_matrix = this.renderWebGL.matrix
         this.renderWebGL.drawScene.push(drawScene)
@@ -169,9 +173,30 @@ export class Geovector {
             drawArr(gl, gl.LINES, undefined, grid_buffers.position.length / 2)
         }
     }
+    render3D(index, attr){
+        this.clearWebGL()
+        this.clearBufferIndex()
+        this.render3D_buffers(index,attr,5,{graph:"LINES"})
+        // this.render3D_indices(index,attr,1,{graph:"LINES"})
 
-    render3D(index, attr) {
-
+        // this.timeOut;
+        // let recent = 1
+        // this.timeOut = setInterval(() => {
+        //     this.clearWebGL()
+        //     this.clearBufferIndex()
+        //     if(recent==1){this.render3D_indices(index,attr,1);recent=0} else{
+        //         this.render3D_lines_indices(index,attr,1);recent=1
+        //     }
+        // }, 2000);
+        // this.render3D_lines_indices(index,attr,1)
+        // let slice = {slice_index:[0,1],slice_length:20}
+        // let slices=[0,1,2,3]
+        // for(let i of slices){
+        // this.render3D_x(index,attr,{slice_index:i,slice_length:20})}
+        // this.render()
+    }
+    render3D_buffers(index, attr,jump=1,type) {
+        const {graph} = type
         let canvas = document.querySelector("#MainCanvas");
         let gl = canvas.getContext("webgl");
         if (!gl) {
@@ -182,20 +207,44 @@ export class Geovector {
         let bufferIndeces = this.useBuffer(2)
         console.log(bufferIndeces)
         let main_program = webglUtils.createProgramFromScripts(gl, [vertex_shader, fragment_shader], ["a_position", "a_color"], bufferIndeces)
-        let main_buffers = get_DEM_Buffer_from_Arrays(gl, this.data[index], attr)
+
+        let data =  new_(this.data[index])//.slice(slice_index*slice_length,(slice_index+1)*slice_length)
+        if(jump!=1 && !isNaN(Number(jump))){
+            for(let row in data){
+                data[row]=data[row].filter((_,i)=>{return i%Number(jump)==0})
+            }
+            data=data.filter((_,i)=>{return i%Number(jump)==0})
+        }
+        let main_buffers;
+        if(graph=="TRIANGLES"){
+            main_buffers= get_DEM_Buffer_from_Arrays(gl,data, attr)}
+        else if (graph=="LINES"){
+            main_buffers = get_LINES_DEM_Buffer_from_Arrays(gl,data, attr)
+        }
+         
         console.log("get array", (Date.now() - time1))
 
         gl.useProgram(main_program);
-        set_Buffers(gl, main_program, bufferIndeces[0], main_buffers.position, 3, { BufferType: gl.FLOAT })
-        set_Buffers(gl, main_program, bufferIndeces[1], main_buffers.texcoord, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        set_Buffers(gl, main_program, bufferIndeces[0], {bufferDataValue:main_buffers.position}, 3, { BufferType: gl.FLOAT })
+        set_Buffers(gl, main_program, bufferIndeces[1],{bufferDataValue: main_buffers.texcoord}, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
         console.log("set buffer", (Date.now() - time1))
         gl.useProgram(main_program);
         let main_matrixLocation = gl.getUniformLocation(main_program, "u_matrix");
 
 
-        let export_matrix = this.saved_cam ? new_(this.saved_cam) : new_(this.default_cam)
-        let shape = this.shape
-        this.renderWebGL = { matrix: export_matrix, drawScene: [drawScene] };//[drawScene]
+        let export_matrix;
+        let shape = [data.length,data[0].length]
+        if(this.renderWebGL && Object.hasOwn(this.renderWebGL,"drawScene") && Array.isArray(this.renderWebGL.drawScene)){
+            export_matrix = this.renderWebGL.matrix
+            this.renderWebGL.drawScene.push(drawScene)
+            console.log(this.renderWebGL.drawScene)
+        } else {
+            this.clearWebGL()
+            this.clearBufferIndex()
+            export_matrix= this.saved_cam ? new_(this.saved_cam) : new_(this.default_cam)
+            this.renderWebGL = { matrix: export_matrix, drawScene: []};//[drawScene]
+            this.renderWebGL.drawScene.push(drawScene)
+        }
         drawScene();
 
         function drawScene() {
@@ -207,13 +256,93 @@ export class Geovector {
             gl.useProgram(main_program);
             gl.uniformMatrix4fv(main_matrixLocation, false, mat);
             gl.useProgram(main_program);
-            drawArr(gl, undefined, undefined, main_buffers.position.length / 3)
+            let length;
+            let primitiveType;
+            if(graph=="TRIANGLES"){
+                length= main_buffers.position.length / 3
+                primitiveType=gl.TRIANGLES}
+            else if (graph=="LINES"){
+                length=main_buffers.position.length / 2
+                primitiveType=gl.LINES
+            }
+            drawArr(gl, primitiveType, undefined,length)
             // gl.disable(gl.DEPTH_TEST);
             // gl.useProgram(grid_program);            
             // gl.uniformMatrix4fv(grid_matrixLocation, false, mat);
             // drawArr(gl, gl.LINES, undefined, grid_buffers.position.length / 2)
         }
     }
+    render3D_indices(index, attr,jump=1,type) {
+        const {graph} = type
+        let canvas = document.querySelector("#MainCanvas");
+        let gl = canvas.getContext("webgl");
+        if (!gl) {
+            return;
+        }
+        // setup GLSL program
+        let time1 = Date.now()
+        let bufferIndeces = this.useBuffer(2)
+        console.log(bufferIndeces)
+        let main_program = webglUtils.createProgramFromScripts(gl, [vertex_shader, fragment_shader], ["a_position", "a_color"], bufferIndeces)
+
+        let data =  new_(this.data[index])//.slice(slice_index*slice_length,(slice_index+1)*slice_length)
+        if(jump!=1 && !isNaN(Number(jump))){
+            for(let row in data){
+                data[row]=data[row].filter((_,i)=>{return i%Number(jump)==0})
+            }
+            data=data.filter((_,i)=>{return i%Number(jump)==0})
+        }
+        let main_buffers;
+        if(graph=="TRIANGLES"){
+            main_buffers= get_DEM_position_Buffer_from_Arrays(gl, data, attr)}
+        else if (graph=="LINES"){
+            main_buffers = get_LINES_DEM_position_Buffer_from_Arrays(gl,data, attr)
+        }
+        console.log("get array", (Date.now() - time1))
+
+        gl.useProgram(main_program);
+        set_Buffers(gl, main_program, bufferIndeces[0], {bufferDataValue:main_buffers.position}, 3, { BufferType: gl.FLOAT })
+        set_Buffers(gl, main_program, bufferIndeces[1], {bufferDataValue:main_buffers.texcoord}, 4, { BufferType: gl.UNSIGNED_BYTE, Normalize: true })
+        set_Element_Array_Buffers(gl,main_program,main_buffers.indices)
+
+        console.log("set buffer", (Date.now() - time1))
+        gl.useProgram(main_program);
+        let main_matrixLocation = gl.getUniformLocation(main_program, "u_matrix");
+
+
+        let export_matrix;
+        let shape = [data.length,data[0].length]
+        if(this.renderWebGL && Object.hasOwn(this.renderWebGL,"drawScene") && Array.isArray(this.renderWebGL.drawScene)){
+            export_matrix = this.renderWebGL.matrix
+            this.renderWebGL.drawScene.push(drawScene)
+            console.log(this.renderWebGL.drawScene)
+        } else {
+            this.clearWebGL()
+            this.clearBufferIndex()
+            export_matrix= this.saved_cam ? new_(this.saved_cam) : new_(this.default_cam)
+            this.renderWebGL = { matrix: export_matrix, drawScene: []};//[drawScene]
+            this.renderWebGL.drawScene.push(drawScene)
+        }
+        drawScene();
+
+        function drawScene() {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.enable(gl.DEPTH_TEST);
+            let mat = get_Matrix(gl, export_matrix, shape)
+
+            gl.useProgram(main_program);
+            gl.uniformMatrix4fv(main_matrixLocation, false, mat);
+            gl.useProgram(main_program);
+            let primitiveType;
+            if(graph=="TRIANGLES"){
+                primitiveType=gl.TRIANGLES}
+            else if (graph=="LINES"){
+                primitiveType=gl.LINES
+            }
+            drawElements(gl,primitiveType,main_buffers.indices.length,gl.UNSIGNED_SHORT,0)
+        }}
+
     render_to_downlaod() {
         let data = __render__(this, false)
         let canvas = createCanvas(Uint8ClampedArray.from(data), this.cols, this.rows)

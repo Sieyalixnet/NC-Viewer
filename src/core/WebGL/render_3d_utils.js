@@ -52,7 +52,7 @@ export function get_Matrix(gl, export_matrix, shape) {//return a matrix of matri
     worldMatrix = m4.xRotate(worldMatrix, degToRad(rotation[0]));
     worldMatrix = m4.zRotate(worldMatrix, degToRad(rotation[2]));
     worldMatrix = m4.scale(worldMatrix, scale[0], scale[1], scale[2]);
-    worldMatrix = m4.translate(worldMatrix, -shape[2] / 2, -shape[1] / 2, 0);
+    worldMatrix = m4.translate(worldMatrix, -shape[1] / 2, -shape[0] / 2, 0);
     worldMatrix = m4.translate(worldMatrix, translation[0], translation[1], translation[2]);
 
     const viewMatrix = m4.inverse(cameraMatrix);
@@ -66,27 +66,50 @@ export function drawArr(gl, primitiveType = gl.TRIANGLES, offset = 0, count) {
     gl.drawArrays(primitiveType, offset, count);
 }
 
+export function drawElements(gl, primitiveType = gl.TRIANGLES,count, indexType=gl.UNSIGNED_SHORT,offset = 0) {
+    gl.drawElements(primitiveType,count,indexType,offset);
+}
 
-export function set_Buffers(gl, program, locationIndex, bufferData, numComponents, attr) {
+export function set_Element_Array_Buffers(gl,program,indices ){
+    const indexBuffer = gl.createBuffer();
+
+    // make this buffer the current 'ELEMENT_ARRAY_BUFFER'
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  
+    gl.bufferData(
+        gl.ELEMENT_ARRAY_BUFFER,
+        new Uint16Array(indices),
+        gl.STATIC_DRAW
+    );
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+}
+
+export function set_Buffers(gl,program, locationIndex, bufferData, numComponents, attr) {
     //set the Buffers according to the webgl location.
     gl.useProgram(program);
+
+    let {bufferDataType, bufferDataValue}=bufferData
+    if(!bufferDataType){bufferDataType=gl.ARRAY_BUFFER}
+
     let Location = locationIndex
     let Buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, Buffer);
+    gl.bindBuffer(bufferDataType, Buffer);
     gl.bufferData(
-        gl.ARRAY_BUFFER,
-        bufferData,
+        bufferDataType,
+        bufferDataValue,
         gl.STATIC_DRAW);
     gl.enableVertexAttribArray(Location);
     const { BufferType, Normalize, Stride, Offset } = attr
-    gl.bindBuffer(gl.ARRAY_BUFFER, Buffer);
+    gl.bindBuffer(bufferDataType, Buffer);
     var size = numComponents;
     var type = BufferType ? BufferType : gl.FLOAT;
     var normalize = Normalize ? Normalize : false;
     var stride = Stride ? Stride : 0;
     var offset = Offset ? Offset : 0;
+    if(bufferDataType==gl.ARRAY_BUFFER){
     gl.vertexAttribPointer(
-        Location, size, type, normalize, stride, offset);
+        Location, size, type, normalize, stride, offset);}
 }
 
 export function return_vec() {//Return a new empty array, which is for test.
@@ -113,18 +136,48 @@ export function mod_value(vec_reshaped, pre_cast) {
     return result
 }
 
+//0  1   +col(行)+1  0  +col(行)  +col(行)+1
+export function get_position_indices(total_length,cols){
+    let result = []
+    for(let i = 0;i<total_length-cols; i++){
+        if((i+1)%cols!=0){//注！！别再搞错了！index和长度
+            result.push(i,i+1,i+cols+1,i+cols+1,i,i+cols)
 
+        }
+
+    }
+    return result
+}
+
+//单数行 0  1 , 0 +col, 0 +col(行)+1,  +col  +col(行)+1, +1   +col(行)+1
+//复数行 0,+col+1, 0  +col,  1  +col(行)+1
+export function get_LINES_position_indices(total_length,cols){
+    let result = []
+    for(let i = 0;i<total_length-2*cols; i++){
+        if((i+1)%cols!=0){//注！！别再搞错了！index和长度
+            if(Math.floor((i+1)/cols)%2!=0){
+            result.push(i,i+1,i,i+cols,i,i+cols+1,i+cols,i+cols+1,i+1,i+cols+1)}
+            else{
+                result.push(i,i+cols+1,i,i+cols,i+1,i+cols+1)
+            }
+        }
+    }
+    for(let i = total_length-2*cols;i<total_length-cols; i++){//the last row
+        if((i+1)%cols!=0){//注！！别再搞错了！index和长度
+            result.push(i,i+1,i,i+cols,i,i+cols+1,i+cols,i+cols+1,i+1,i+cols+1)}
+        
+    }
+    return result
+}
 
 export function return_tri(vec) {// x, y, z -> two triangle to render in webgl.
     let result = []
     for (let row in vec) {
-        if (vec[Number(row) + 1]) {
-            for (let i = 0; i < vec[Number(row)].length; i++) {
-                if (vec[Number(row) + 1][i + 1]) {
-                    let upper_tri = [...vec[Number(row)][i], ...vec[Number(row)][i + 1], ...vec[Number(row) + 1][i + 1]]
-                    let bottom_tri = [...vec[Number(row)][i], ...vec[Number(row) + 1][i], ...vec[Number(row) + 1][i + 1]]
-                    result.push(...upper_tri)
-                    result.push(...bottom_tri)
+        let r= Number(row)
+        if (vec[r + 1]) {
+            for (let i = 0; i < vec[r].length; i++) {
+                if (vec[r + 1][i + 1]) {
+                    result.push(vec[r][i],vec[r][i + 1],vec[r + 1][i + 1],vec[r][i], vec[r + 1][i], vec[r + 1][i + 1])
                 }
             }
 
@@ -132,7 +185,44 @@ export function return_tri(vec) {// x, y, z -> two triangle to render in webgl.
         }
 
     }
-    return result
+    return result.flat(Infinity)
+}
+
+//单数行 0  1 , 0 +col, 0 +col(行)+1,  +col  +col(行)+1, +1   +col(行)+1
+//复数行 0,+col+1, 0  +col,  1  +col(行)+1
+export function return_lines(vec) {// x, y, z -> two triangle to render in webgl.
+    let result = []
+    for (let row in vec) {
+        const r= Number(row)
+        if (r<=vec.length-3) {
+            for (let i = 0; i < vec[r].length; i++) {
+                if (vec[r + 1][i + 1]) {
+                    if(r%2==0){
+                    result.push(vec[r][i],vec[r][i + 1],
+                        vec[r][i],vec[r+1][i],
+                        vec[r][i],vec[r+1][i+1],
+                        vec[r+1][i],vec[r+1][i+1],
+                        vec[r][i+1],vec[r+1][i+1])}
+                    else{
+                        
+                        result.push(vec[r][i],vec[r+1][i],
+                            vec[r][i],vec[r+1][i+1],
+                            vec[r][i+1],vec[r+1][i+1])
+                    }
+                }
+            }
+        } else if(r==vec.length-2){
+            for (let i = 0; i < vec[r].length; i++) {
+                if (vec[r + 1][i + 1]) {
+            result.push(vec[r][i],vec[r][i + 1],
+                vec[r][i],vec[r+1][i],
+                vec[r][i],vec[r+1][i+1],
+                vec[r+1][i],vec[r+1][i+1],
+                vec[r][i+1],vec[r+1][i+1])
+        }}}
+
+    }
+    return result.flat(Infinity)
 }
 
 function color_interpolate(color_array, value_array) {
@@ -149,7 +239,204 @@ function convert_colorString_to_obj(color) {
     return { r: Number(color_result[1].trim()), g: Number(color_result[2].trim()), b: Number(color_result[3].trim()) }
 
 }
+export function get_LINES_DEM_position_Buffer_from_Arrays(gl, Data, attr) {//FOR POSITION AND INDICES
+    //a 2-dimensions array -> position and color Buffer
+    let { color_array, value_array, default_value_to_value, color_value_percent } = attr
 
+    //add and apply plugins
+    let time1=Date.now()
+    let pre_casts = []
+    if (typeof (default_value_to_value) == "number") {
+        let max_Data = max_f64(Data.flat())
+        let min_Data = min_f64(Data.flat())
+        pre_casts.push(remove_default_value(max_Data, min_Data, default_value_to_value))
+    }
+    let result = mod_value(Data, pre_casts).flat(Infinity)
+    let indices= get_LINES_position_indices(Data.length*Data[0].length,Data[0].length).flat()
+    console.log("get pos, start flat",(Date.now()-time1))
+
+    
+    // let _renderData_ = result.flat()
+    console.log("end flat",(Date.now()-time1))
+    let position = new Float32Array(result);
+    console.log("get pos typearry",(Date.now()-time1))
+    let _texcoord_ = [];
+    
+    let Z = result.filter((x,i) => {return (i+1)%3==0})//we only need its Z value.
+    // let Z = result//second way to interpret the color
+    // console.log(Z.length)
+    if (color_value_percent) {
+        let max_Z = max_f64(Z)
+        let min_Z = min_f64(Z)
+        let color = color_interpolate(color_array, value_array)
+        console.log("start color interpret",(Date.now()-time1))
+        for (let i of Z) {
+            let v = ((i - min_Z) / (max_Z - min_Z))
+            let c = convert_colorString_to_obj(color(v))
+            _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+        }
+        console.log("end color interpret",(Date.now()-time1))
+    } else {
+        let min = Math.min(...value_array)
+        let max = Math.max(...value_array)
+        let temp_value_array = reflect_to(new_(value_array), 0, 1);
+        let color = color_interpolate(color_array, temp_value_array)
+        for (let i of Z) {
+            if (i >= min && i <= max) {
+                let v = ((i - min) / (max - min))
+                let c = convert_colorString_to_obj(color(v))
+                _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+            }
+            else {
+                _texcoord_.push(...[0, 0, 0,0])
+            }
+        }
+
+
+    }
+    console.log("get color",(Date.now()-time1))
+    let texcoord = new Uint8Array(_texcoord_)
+    return { position, texcoord,indices }
+}
+export function get_DEM_position_Buffer_from_Arrays(gl, Data, attr) {//FOR POSITION AND INDICES
+    //a 2-dimensions array -> position and color Buffer
+    let { color_array, value_array, default_value_to_value, color_value_percent } = attr
+
+    //add and apply plugins
+    let time1=Date.now()
+    let pre_casts = []
+    if (typeof (default_value_to_value) == "number") {
+        let max_Data = max_f64(Data.flat())
+        let min_Data = min_f64(Data.flat())
+        pre_casts.push(remove_default_value(max_Data, min_Data, default_value_to_value))
+    }
+    let result = mod_value(Data, pre_casts).flat(Infinity)
+    let indices= get_position_indices(Data.length*Data[0].length,Data[0].length).flat()
+    console.log("get pos, start flat",(Date.now()-time1))
+
+    
+    // let _renderData_ = result.flat()
+    console.log("end flat",(Date.now()-time1))
+    let position = new Float32Array(result);
+    console.log("get pos typearry",(Date.now()-time1))
+    let _texcoord_ = [];
+    console.log(result.length)
+    
+    let Z = result.filter((x,i) => {return (i+1)%3==0})//we only need its Z value.
+    // let Z = result//second way to interpret the color
+    // console.log(Z.length)
+    if (color_value_percent) {
+        let max_Z = max_f64(Z)
+        let min_Z = min_f64(Z)
+        let color = color_interpolate(color_array, value_array)
+        console.log("start color interpret",(Date.now()-time1))
+        // for (let i in Z) {//second way to interpret the color ,may be faster in WASM?
+        //     if((i+1)%3==0){
+        //     let    x=Z[i]
+        //     let v = ((x - min_Z) / (max_Z - min_Z))
+        //     let c = convert_colorString_to_obj(color(v))
+        //     Z[i-2]=c["r"]
+        //     Z[i-1]=c["g"]
+        //     Z[i]=c["b"]
+        // }
+        // }
+        for (let i of Z) {
+            let v = ((i - min_Z) / (max_Z - min_Z))
+            let c = convert_colorString_to_obj(color(v))
+            _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+        }
+        console.log("end color interpret",(Date.now()-time1))
+    } else {
+        let min = Math.min(...value_array)
+        let max = Math.max(...value_array)
+        let temp_value_array = reflect_to(new_(value_array), 0, 1);
+        let color = color_interpolate(color_array, temp_value_array)
+        for (let i of Z) {
+            if (i >= min && i <= max) {
+                let v = ((i - min) / (max - min))
+                let c = convert_colorString_to_obj(color(v))
+                _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+            }
+            else {
+                _texcoord_.push(...[0, 0, 0,0])
+            }
+        }
+
+
+    }
+    console.log("get color",(Date.now()-time1))
+    let texcoord = new Uint8Array(_texcoord_)
+    return { position, texcoord,indices }
+}
+
+export function get_LINES_DEM_Buffer_from_Arrays(gl, Data, attr) {
+    //a 2-dimensions array -> position and color Buffer
+    let { color_array, value_array, default_value_to_value, color_value_percent } = attr
+
+    //add and apply plugins
+    let time1=Date.now()
+    let pre_casts = []
+    if (typeof (default_value_to_value) == "number") {
+        let max_Data = max_f64(Data.flat())
+        let min_Data = min_f64(Data.flat())
+        pre_casts.push(remove_default_value(max_Data, min_Data, default_value_to_value))
+    }
+    let result = return_lines(mod_value(Data, pre_casts))
+    console.log("get pos, start flat",(Date.now()-time1))
+
+    
+    // let _renderData_ = result.flat()
+    console.log("end flat",(Date.now()-time1))
+    let position = new Float32Array(result);
+    console.log("get pos typearry",(Date.now()-time1))
+    let _texcoord_ = [];
+    console.log(result.length)
+    let Z = result.filter((x,i) => {return (i+1)%3==0})//we only need its Z value.
+    // let Z = result//second way to interpret the color
+    console.log(Z.length)
+    if (color_value_percent) {
+        let max_Z = max_f64(Z)
+        let min_Z = min_f64(Z)
+        let color = color_interpolate(color_array, value_array)
+        console.log("start color interpret",(Date.now()-time1))
+        // for (let i in Z) {//second way to interpret the color ,may be faster in WASM?
+        //     if((i+1)%3==0){
+        //     let    x=Z[i]
+        //     let v = ((x - min_Z) / (max_Z - min_Z))
+        //     let c = convert_colorString_to_obj(color(v))
+        //     Z[i-2]=c["r"]
+        //     Z[i-1]=c["g"]
+        //     Z[i]=c["b"]
+        // }
+        // }
+        for (let i of Z) {
+            let v = ((i - min_Z) / (max_Z - min_Z))
+            let c = convert_colorString_to_obj(color(v))
+            _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+        }
+        console.log("end color interpret",(Date.now()-time1))
+    } else {
+        let min = Math.min(...value_array)
+        let max = Math.max(...value_array)
+        let temp_value_array = reflect_to(new_(value_array), 0, 1);
+        let color = color_interpolate(color_array, temp_value_array)
+        for (let i of Z) {
+            if (i >= min && i <= max) {
+                let v = ((i - min) / (max - min))
+                let c = convert_colorString_to_obj(color(v))
+                _texcoord_.push(...[c["r"], c["g"], c["b"],255])
+            }
+            else {
+                _texcoord_.push(...[0, 0, 0,0])
+            }
+        }
+
+
+    }
+    console.log("get color",(Date.now()-time1))
+    let texcoord = new Uint8Array(_texcoord_)
+    return { position, texcoord }
+}
 
 
 export function get_DEM_Buffer_from_Arrays(gl, Data, attr) {
