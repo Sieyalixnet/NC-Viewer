@@ -6,14 +6,14 @@
   let files = [];
   let Data = [];
 
-  //test random DEM
+  // test random DEM
   // import { onMount } from "svelte";
   //   import {createVector} from "./core/Geovector"
   // import {random_DEM} from "./core/WebGL/random_DEM"
   // onMount(()=>{
-  //   let v = random_DEM(200,[-1,20],0)
+  //   let v = random_DEM(50,[-10,30],1)
   //   console.log(v)
-  //   Data.push(createVector(v,[1,200,200]))
+  //   Data.push(createVector(v,[1,50,50]))
   // })
 
   $: if (files.length >= 1 || Data.length >= 1) {

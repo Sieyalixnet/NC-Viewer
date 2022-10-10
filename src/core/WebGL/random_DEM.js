@@ -38,7 +38,6 @@ function random_expansion(matrix,random_range,base){
         if(r==c ){
             matrix[r][c]=((Math.round((getValidValue(c,r,matrix))*100)/100)*17+(Math.round((Math.random()*(random_range[1]-random_range[0])+random_range[0])*100)/100)*3)/20
         }
-        // if(matrix[r][c]<base){matrix[r][c]=base}
     }
   }
   return matrix
@@ -55,19 +54,10 @@ function getValidValue(col,row,matrix){
         for(let r of row_range){
             if(r>=0 && r<rows && c>=0 && c<cols){
                 let temp = validOr(matrix[r][c])
-                sum+=temp}else{div-=1}}
+                sum+=temp;
+            if(temp==0){div-=1}}else{div-=1}}
     }
-//     let r = Math.random();
-//     if(r>0.9){
-//     return (((Math.random()*2-1)+1)*(sum))/div
-// }
-//     else if(r>.6){
-//         return ((Math.random())*(sum))/div
-
-//     } else{
         return sum/div
-
-    // }
 }
 function validOr(value){
     if(isNumber(value) && !isNaN(value)){
