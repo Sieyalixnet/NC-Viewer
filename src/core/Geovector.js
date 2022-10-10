@@ -173,10 +173,14 @@ export class Geovector {
             drawArr(gl, gl.LINES, undefined, grid_buffers.position.length / 2)
         }
     }
-    render3D(index, attr){
+    render3D(index, attr,RenderType,graph){
         this.clearWebGL()
         this.clearBufferIndex()
-        this.render3D_buffers(index,attr,5,{graph:"LINES"})
+        if(RenderType=="buffers"){
+        this.render3D_buffers(index,attr,1,{graph:graph})}
+        else if(RenderType=="indices"){
+            this.render3D_indices(index,attr,1,{graph:graph})
+        }
         // this.render3D_indices(index,attr,1,{graph:"LINES"})
 
         // this.timeOut;

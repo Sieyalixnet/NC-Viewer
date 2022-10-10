@@ -1,8 +1,21 @@
 <script>
+
   import Greet from "./lib/Greet.svelte";
   import Msg from "./lib/Msg.svelte";
+
   let files = [];
   let Data = [];
+
+  //test random DEM
+  // import { onMount } from "svelte";
+  //   import {createVector} from "./core/Geovector"
+  // import {random_DEM} from "./core/WebGL/random_DEM"
+  // onMount(()=>{
+  //   let v = random_DEM(200,[-1,20],0)
+  //   console.log(v)
+  //   Data.push(createVector(v,[1,200,200]))
+  // })
+
   $: if (files.length >= 1 || Data.length >= 1) {
     let container = document.getElementsByClassName("container");
     if (container.length > 0) {

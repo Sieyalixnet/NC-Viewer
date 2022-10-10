@@ -28,8 +28,9 @@
     };
 </script>
 
-{#if range_3dimension_boolen}
+{#if range_3dimension_boolen && Data[0].slice && Data[0].slice[0]["name"]}
     <div>
+        
         <h3>The 3rd Dimension: {Data[0].slice[0]["name"]}</h3>
         <div>
             <input

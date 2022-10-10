@@ -11,7 +11,15 @@
     let color_value_percent = true;
     let selected_range = 0;
     let default_value_to_value;
+    let renderType ="buffers"
+    let graph="TRIANGLES"
 
+    let graph_switch = ()=>{
+        graph=graph=="TRIANGLES"?"LINES":"TRIANGLES"
+    }
+    let renderType_switch = ()=>{
+        renderType=renderType=="buffers"?"indices":"buffers"
+    }    
     //PARTS: init Store to show message
     import { msg,message } from "../../store";
     import { tick } from "svelte";
@@ -51,7 +59,7 @@
             default_value_to_value,
         };
         Data[0].clearBufferIndex();
-        Data[0].render3D(selected_range, attr);
+        Data[0].render3D(selected_range, attr,renderType,graph);
         if (Data[0].grid) {
             Data[0].renderGrid();
         }
@@ -94,6 +102,22 @@
         />
     </div>
     <div class="show_data_option">
+        <button on:click={graph_switch}
+        >图形:
+        {#if graph=="TRIANGLES"}
+            实体
+        {:else}
+            线段
+        {/if}
+    </button>
+    <button on:click={renderType_switch}
+    >渲染:
+    {#if renderType=="buffers"}
+        快速
+    {:else}
+        稳定
+    {/if}
+</button>
         <button on:click={show_3D}>渲染</button>
         <button on:click={downloadJSON}>下载JSON</button>
     </div>
